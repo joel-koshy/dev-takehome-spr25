@@ -1,19 +1,26 @@
 import { PAGINATION_PAGE_SIZE } from "@/lib/constants/config";
 import clientPromise from "@/lib/db/mongodb";
+import { InvalidPaginationError } from "@/lib/errors/inputExceptions";
 import { MockItemRequest } from "@/lib/types/mock/request";
+import { isValidStatus } from "@/lib/validation/request/requests";
 import { Collection } from "mongodb";
 
 export async function getItemRequests(
     status: string | null,
-    page: number
+    page: number,
+    collectionName:string = "requests"
 ): Promise<MockItemRequest[]> {
+    if(page < 1){
+        throw new InvalidPaginationError(page, PAGINATION_PAGE_SIZE)
+        console.log("reached")
+    }
     try {
         const client = await clientPromise;
         const db = client.db("crisis_corner");
-        const col: Collection<MockItemRequest> = db.collection("requests");
+        const col: Collection<MockItemRequest> = db.collection(collectionName);
 
         const aggregatedQuery: object[] = [];
-        const validatedStatus = status;
+        const validatedStatus = isValidStatus(status);
         // Filter status
         if (validatedStatus) {
             aggregatedQuery.push({
@@ -26,11 +33,13 @@ export async function getItemRequests(
         // Sort By date
         aggregatedQuery.push({
             $sort: {
-                requestedCreatedDate: -1,
+                requestCreatedDate: -1,
+                requestorName: 1, 
             },
         });
 
         // Paginate
+
         aggregatedQuery.push({
             $skip: (Math.max(1, page) - 1) * PAGINATION_PAGE_SIZE,
         });
