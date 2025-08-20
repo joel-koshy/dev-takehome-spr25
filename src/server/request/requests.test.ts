@@ -1,20 +1,44 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { MockItemRequest } from "@/lib/types/mock/request";
 import { RequestStatus } from "@/lib/types/request";
 import { PAGINATION_PAGE_SIZE } from "@/lib/constants/config";
 import { getItemRequests, createItemRequest } from "./requests";
 import mockItemRequests from "@/app/api/mock/data";
-import { InvalidPaginationError } from "@/lib/errors/inputExceptions";
+import { InvalidInputError, InvalidPaginationError } from "@/lib/errors/inputExceptions";
 import clientPromise, { getCollection } from "@/lib/db/mongodb";
+import { ItemRequest } from "@/lib/types/requests/requests";
+import { ObjectId } from "mongodb";
 
-async function setUpDB(data: MockItemRequest[] = mockItemRequests) {
+const mockData:ItemRequest[] = mockItemRequests.map((mock) => {
+    const newId = new ObjectId() 
+    return(
+        {
+        _id: newId, //To match DB and local 
+        id: newId,
+
+        requestorName: mock.requestorName,
+        itemRequested: mock.itemRequested,
+        requestCreatedDate: new Date(mock.requestCreatedDate),
+        lastEditedDate: mock.lastEditedDate ? new Date(mock.lastEditedDate) : null,
+        status: mock.status,
+        }
+    )
+})
+
+
+async function clearDB() {
     const col = await getCollection("test");
     await col.deleteMany({});
+}
+
+async function setUpDB(data: ItemRequest[] = mockData) {
+    clearDB()
+    const col = await getCollection("test");
     await col.insertMany(data);
 }
 
 const getSortedMockData = () =>
-    [...mockItemRequests].sort((a, b) => {
+    [...mockData].sort((a, b) => {
         const dateDiff =
             b.requestCreatedDate.getTime() - a.requestCreatedDate.getTime();
         if (dateDiff !== 0) return dateDiff;
@@ -34,8 +58,8 @@ describe("getItemRequests", async () => {
             const result = await getItemRequests(null, 1, "test");
             const sortedData = getSortedMockData();
             expect(result).toHaveLength(PAGINATION_PAGE_SIZE);
-            expect(result[0].id).toBe(sortedData[0].id); // Should be ID 10
-            expect(result[PAGINATION_PAGE_SIZE - 1].id).toBe(
+            expect(result[0].id).toStrictEqual(sortedData[0].id); // Should be ID 10
+            expect(result[PAGINATION_PAGE_SIZE - 1].id).toStrictEqual(
                 sortedData[PAGINATION_PAGE_SIZE - 1].id
             ); // Should be ID 6
         });
@@ -45,8 +69,8 @@ describe("getItemRequests", async () => {
             const sortedData = getSortedMockData();
 
             expect(result).toHaveLength(PAGINATION_PAGE_SIZE);
-            expect(result[0].id).toBe(sortedData[PAGINATION_PAGE_SIZE].id); // Should be ID 5
-            expect(result[PAGINATION_PAGE_SIZE - 1].id).toBe(
+            expect(result[0].id).toStrictEqual(sortedData[PAGINATION_PAGE_SIZE].id); // Should be ID 5
+            expect(result[PAGINATION_PAGE_SIZE - 1].id).toStrictEqual(
                 sortedData[2 * PAGINATION_PAGE_SIZE - 1].id
             ); // Should be ID 1
         });
@@ -74,8 +98,8 @@ describe("getItemRequests", async () => {
             expect(
                 result.every((r) => r.status === RequestStatus.APPROVED)
             ).toBe(true);
-            expect(result[0].id).toBe(approvedRequests[0].id); // ID 10
-            expect(result[2].id).toBe(approvedRequests[2].id); // ID 2
+            expect(result[0].id).toStrictEqual(approvedRequests[0].id); // ID 10
+            expect(result[2].id).toStrictEqual(approvedRequests[2].id); // ID 2
         });
 
         it('should return an empty array for the second page of "approved" requests', async () => {
@@ -100,7 +124,7 @@ describe("getItemRequests", async () => {
             expect(
                 result.every((r) => r.status === RequestStatus.PENDING)
             ).toBe(true);
-            expect(result[0].id).toBe(pendingRequests[0].id); // ID 9
+            expect(result[0].id).toStrictEqual(pendingRequests[0].id); // ID 9
         });
     });
 
@@ -111,7 +135,7 @@ describe("getItemRequests", async () => {
             const sortedData = getSortedMockData();
 
             expect(result).toHaveLength(PAGINATION_PAGE_SIZE);
-            expect(result[0].id).toBe(sortedData[0].id); // ID 10
+            expect(result[0].id).toStrictEqual(sortedData[0].id); // ID 10
         });
     });
 
@@ -131,9 +155,9 @@ describe("getItemRequests", async () => {
     });
 
     describe("when filtering for a status with no matching items", () => {
-        const localMockData: MockItemRequest[] = [
+        const localMockData: ItemRequest[] = [
             {
-                id: 1,
+                id: new ObjectId(),
                 requestorName: "Alice",
                 itemRequested: "Laptop",
                 requestCreatedDate: new Date("2023-01-01T10:00:00Z"),
@@ -157,4 +181,94 @@ describe("getItemRequests", async () => {
     });
 });
 
+describe('createItemRequest', () => {
 
+  // Reset the database before each test to ensure a clean state
+  beforeEach(async () => {
+    await clearDB();
+  });
+
+  // Test case group for successful creation
+  describe('when given valid data', () => {
+    it('should create a new item request and add it to the database', async () => {
+      const newItemData = {
+        requestorName: 'John Doe',
+        itemRequested: 'A new standing desk',
+        status: RequestStatus.APPROVED,
+      };
+
+      await createItemRequest(newItemData, "test");
+      
+      const col = await getCollection("test");
+      const count = await col.countDocuments();
+      const insertedItem = await col.findOne({ requestorName: 'John Doe' });
+
+      // Expect the total count to increase by 1
+      expect(count).toBe(mockItemRequests.length + 1);
+      
+      // Expect the inserted item to exist and have the correct data
+      expect(insertedItem).not.toBeNull();
+      expect(insertedItem?.itemRequested).toBe('A new standing desk');
+      expect(insertedItem?.status).toBe(RequestStatus.APPROVED);
+    });
+
+    it('should default to a "pending" status if no status is provided', async () => {
+      const newItemData = {
+        requestorName: 'Jane Smith',
+        itemRequested: 'Ergonomic keyboard',
+      };
+
+      await createItemRequest(newItemData, "test");
+
+      const col = await getCollection("test");
+      const insertedItem = await col.findOne({ requestorName: 'Jane Smith' });
+
+      expect(insertedItem).not.toBeNull();
+      expect(insertedItem?.status).toBe(RequestStatus.PENDING);
+    });
+  });
+
+  // Test case group for invalid input and error handling
+  describe('when given invalid data', () => {
+    it('should throw InvalidInputError if requestorName is missing', async () => {
+      const invalidData = { itemRequested: 'An item' };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if itemRequested is missing', async () => {
+      const invalidData = { requestorName: 'Missing Item' };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if requestorName is too short', async () => {
+      const invalidData = { requestorName: 'Bo', itemRequested: 'A valid item' };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if requestorName is too long', async () => {
+      const longName = 'a'.repeat(31);
+      const invalidData = { requestorName: longName, itemRequested: 'A valid item' };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if itemRequested is too short', async () => {
+      const invalidData = { requestorName: 'Valid Name', itemRequested: 'A' };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if itemRequested is too long', async () => {
+      const longItem = 'a'.repeat(101);
+      const invalidData = { requestorName: 'Valid Name', itemRequested: longItem };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if an invalid status is provided', async () => {
+      const invalidData = { 
+        requestorName: 'Status Test', 
+        itemRequested: 'A valid item',
+        status: 'on-hold' // Not a valid RequestStatus
+      };
+      await expect(createItemRequest(invalidData, "test")).rejects.toThrow(InvalidInputError);
+    });
+  });
+});
