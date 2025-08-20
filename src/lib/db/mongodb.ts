@@ -1,4 +1,5 @@
-import { MongoClient } from "mongodb";
+import { Collection, MongoClient } from "mongodb";
+import { MockItemRequest } from "../types/mock/request";
 
 const URI = process.env.DB_URI
 const options = {};
@@ -18,3 +19,10 @@ if (!global._mongoClientCache) {
 clientPromise = global._mongoClientCache;
 
 export default clientPromise;
+
+export async function getCollection<T>(
+    dbName:string
+): Promise<Collection<MockItemRequest>> {
+  const client = await clientPromise;
+  return client.db(dbName).collection<MockItemRequest>("requests");
+}
