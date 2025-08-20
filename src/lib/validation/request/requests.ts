@@ -1,6 +1,6 @@
 import { RequestStatus } from "@/lib/types/request";
 
-function isValidString(str: any, lower?: number, upper?: number) :boolean{
+export function isValidString(str: any, lower?: number, upper?: number) :boolean{
     if (typeof str !== "string" || str.trim() == "") {
         return false;
     }
@@ -16,4 +16,6 @@ export function isValidStatus(status: any): boolean {
         Object.values(RequestStatus).includes(status as RequestStatus)
     );
 }
+
+
 

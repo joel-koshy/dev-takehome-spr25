@@ -1,5 +1,6 @@
 import { Collection, MongoClient } from "mongodb";
 import { MockItemRequest } from "../types/mock/request";
+import { ItemRequest } from "../types/requests/requests";
 
 const URI = process.env.DB_URI
 const options = {};
@@ -22,7 +23,7 @@ export default clientPromise;
 
 export async function getCollection<T>(
     dbName:string
-): Promise<Collection<MockItemRequest>> {
+): Promise<Collection<ItemRequest>> {
   const client = await clientPromise;
-  return client.db(dbName).collection<MockItemRequest>("requests");
+  return client.db(dbName).collection<ItemRequest>("requests");
 }
