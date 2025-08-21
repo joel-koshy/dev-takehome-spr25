@@ -5,13 +5,13 @@ import { MockItemRequest } from "@/lib/types/mock/request";
 import { RequestStatus } from "@/lib/types/request";
 import { ItemRequest } from "@/lib/types/requests/requests";
 import { isValidStatus, isValidString } from "@/lib/validation/request/requests";
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 
 export async function getItemRequests(
     status: string | null,
     page: number,
     dbName:string = "crisis_corner"
-): Promise<MockItemRequest[]> {
+): Promise<ItemRequest[]> {
     if(page < 1){
         throw new InvalidPaginationError(page, PAGINATION_PAGE_SIZE)
     }
@@ -61,7 +61,7 @@ export async function getItemRequests(
         });
 
         let items = await col
-            .aggregate<MockItemRequest>(aggregatedQuery)
+            .aggregate<ItemRequest>(aggregatedQuery)
             .toArray();
         return items;
     } catch (error) {
@@ -112,3 +112,45 @@ export async function createItemRequest(request: any, dbName:string = "crisis_co
     }
 }
 
+
+export async function editItemRequest(
+    request: any,
+    dbName: string = "crisis_corner"
+): Promise<ItemRequest | null> {
+    if (!request || typeof request !== "object") {
+        throw new InvalidInputError("Request body must be an object");
+    }
+
+    const { id, newStatus } = request;
+
+    if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
+        throw new InvalidInputError("Invalid or missing ObjectId");
+    }
+
+    if (!newStatus || !isValidStatus(newStatus)) {
+        throw new InvalidInputError("Invalid or missing status value");
+    }
+
+    try {
+        const col: Collection<ItemRequest> = await getCollection(dbName);
+
+        const result = await col.findOneAndUpdate(
+            { _id: new ObjectId(id) }, 
+            {
+                $set: {
+                    status: newStatus,
+                    lastEditedDate: new Date(),
+                },
+            },
+            { returnDocument: "after" } 
+        );
+        if (result){
+            return result
+        }
+        return null; 
+
+    } catch (error) {
+        console.error("Error updating item request:", error);
+        throw new Error("Failed to update item request");
+    }
+}
