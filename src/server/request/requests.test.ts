@@ -11,6 +11,7 @@ import {
 import clientPromise, { getCollection } from "@/lib/db/mongodb";
 import { ItemRequest } from "@/lib/types/requests/requests";
 import { ObjectId } from "mongodb";
+import { BatchApproveRequests, BatchDeleteRequests } from "../batch/requests";
 
 const mockData: ItemRequest[] = mockItemRequests.map((mock) => {
     const newId = new ObjectId();
@@ -158,6 +159,7 @@ describe("getItemRequests", async () => {
                 requestCreatedDate: new Date("2023-01-01T10:00:00Z"),
                 lastEditedDate: null,
                 status: RequestStatus.PENDING,
+                _id: undefined
             },
         ];
 
@@ -323,7 +325,7 @@ describe('editItemRequest', () => {
 
       // Assert: Verify the update in the database
       const col = await getCollection("test");
-      const dbItem = await col.findOne({ _id: originalItem.id });
+      const dbItem = await col.findOne({ id: originalItem.id });
       
       expect(dbItem).not.toBeNull();
       expect(dbItem?.status).toBe(RequestStatus.APPROVED);
@@ -399,4 +401,129 @@ describe('editItemRequest', () => {
       expect(result).toBeNull();
     });
   });
+});
+
+
+describe('BatchApproveRequests', () => {
+
+  beforeEach(async () => {
+    await setUpDB();
+  });
+
+  describe('Successful Operations', () => {
+    it('should update the statuses of multiple valid requests', async () => {
+      // Arrange: Select three items to update
+      const itemsToUpdate = [
+        { id: mockData[0]._id.toHexString(), status: RequestStatus.APPROVED },
+        { id: mockData[1]._id.toHexString(), status: RequestStatus.REJECTED },
+        { id: mockData[2]._id.toHexString(), status: RequestStatus.COMPLETED },
+      ];
+
+      // Act
+      const result = await BatchApproveRequests(itemsToUpdate, "test");
+
+      // Assert: Check the operation result
+      expect(result.matchedCount).toBe(3);
+      expect(result.modifiedCount).toBe(3);
+      expect(result.errors).toHaveLength(0);
+
+      // Assert: Verify the changes in the database
+      const col = await getCollection("test");
+      const updatedItem1 = await col.findOne({ _id: mockData[0]._id });
+      const updatedItem2 = await col.findOne({ _id: mockData[1]._id });
+      const updatedItem3 = await col.findOne({ _id: mockData[2]._id });
+
+      expect(updatedItem1?.status).toBe(RequestStatus.APPROVED);
+      expect(updatedItem2?.status).toBe(RequestStatus.REJECTED);
+      expect(updatedItem3?.status).toBe(RequestStatus.COMPLETED);
+    });
+  });
+
+  describe('Invalid Inputs and Edge Cases', () => {
+    it('should throw InvalidInputError for a malformed ObjectId', async () => {
+      const invalidRequest = [{ id: 'not-an-id', status: RequestStatus.APPROVED }];
+      await expect(BatchApproveRequests(invalidRequest, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError if status is missing', async () => {
+        const invalidRequest = [{ id: mockData[0]._id.toHexString() }]; // Status is missing
+        await expect(BatchApproveRequests(invalidRequest as any, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+    it('should throw InvalidInputError for an invalid status value', async () => {
+        const invalidRequest = [{ id: mockData[0]._id.toHexString(), status: 'on_hold' }];
+        await expect(BatchApproveRequests(invalidRequest as any, "test")).rejects.toThrow(InvalidInputError);
+    });
+
+
+    it('should only update existing items and ignore non-existent ones', async () => {
+        const nonExistentId = new ObjectId().toHexString();
+        const request = [
+            { id: mockData[0]._id.toHexString(), status: RequestStatus.APPROVED },
+            { id: nonExistentId, status: RequestStatus.REJECTED }
+        ];
+
+        const result = await BatchApproveRequests(request, "test");
+
+        expect(result.matchedCount).toBe(1);
+        expect(result.modifiedCount).toBe(1);
+    });
+  });
+});
+
+
+// --- Test Suite for BatchDeleteRequests ---
+describe('BatchDeleteRequests', () => {
+
+    beforeEach(async () => {
+        await setUpDB();
+    });
+
+    describe('Successful Operations', () => {
+        it('should delete multiple valid requests', async () => {
+            // Arrange: Select two items to delete
+            const itemsToDelete = [
+                { id: mockData[0]._id.toHexString() },
+                { id: mockData[1]._id.toHexString() },
+            ];
+            const initialCount = mockData.length;
+
+            // Act
+            await BatchDeleteRequests(itemsToDelete, "test");
+            
+            // Assert: Check the database state directly for deletions
+            const col = await getCollection("test");
+            const finalCount = await col.countDocuments();
+            
+            expect(finalCount).toBe(initialCount - 2);
+
+            const deletedItem1 = await col.findOne({ _id: mockData[0]._id });
+            const deletedItem2 = await col.findOne({ _id: mockData[1]._id });
+
+            expect(deletedItem1).toBeNull();
+            expect(deletedItem2).toBeNull();
+        });
+    });
+
+    describe('Invalid Inputs and Edge Cases', () => {
+        it('should throw InvalidInputError for a malformed ObjectId', async () => {
+            const invalidRequest = [{ id: 'not-an-id' }];
+            await expect(BatchDeleteRequests(invalidRequest, "test")).rejects.toThrow(InvalidInputError);
+        });
+
+        it('should only delete existing items and ignore non-existent ones', async () => {
+            const nonExistentId = new ObjectId().toHexString();
+            const request = [
+                { id: mockData[0]._id.toHexString() },
+                { id: nonExistentId }
+            ];
+            const initialCount = mockData.length;
+
+            await BatchDeleteRequests(request, "test");
+
+            const col = await getCollection("test");
+            const finalCount = await col.countDocuments();
+            expect(finalCount).toBe(initialCount - 1);
+        });
+    });
 });
