@@ -1,13 +1,34 @@
+"use client"
+import { GoogleMap, HeatmapLayer, useLoadScript } from "@react-google-maps/api";
+import { useEffect, useState } from "react";
+
+type HeatmapPoint = {
+    lat: number;
+    lng: number;
+};
+
 export default function Kewl() {
-  return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-primary text-white gap-5">
-      {/* 
-      Write something unique about you here! 
-      It could be a club you're part of, a weird skill you have, or something special that happened to you.
-      Feel free to put links, images, whatever! 
-      Don't worry about styling- we aren't grading you on this- it's just to get to know you better! :) 
-      */}
-      😎😎😎
-    </div>
-  );
+    const [points, setPoints] = useState<HeatmapPoint[]>([]);
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+        libraries: ["visualization"],
+    });
+
+    useEffect(() => {
+        fetch("/api/heatmap")
+            .then((res) => res.json())
+            .then((data) => setPoints(data));
+    }, []);
+    if (!isLoaded) return <div> Loading...</div>
+    return (
+        <GoogleMap
+            zoom={13}
+            center={{ lat: 33.75, lng: -84.38 }} // ATL Lat and Long
+            mapContainerStyle={{ height: "100vh", width: "100%" }}
+        >
+            <HeatmapLayer
+                data={points.map((p) => new google.maps.LatLng(p.lat, p.lng))}
+            />
+        </GoogleMap>
+    );
 }
