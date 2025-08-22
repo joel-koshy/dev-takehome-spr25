@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ^ disable rules because we are validating anys to make sure it conforms else erroring
+
 import { InvalidInputError } from "@/lib/errors/inputExceptions";
 import { RequestStatus } from "@/lib/types/request";
 import {

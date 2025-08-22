@@ -1,5 +1,4 @@
 import { WriteError } from "mongodb";
-import { RequestStatus } from "../request";
 
 export interface BatchReturn{
     matchedCount: number, 
@@ -7,6 +6,4 @@ export interface BatchReturn{
     upserts: number, 
     errors: WriteError[], 
 }
-
-
 

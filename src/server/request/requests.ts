@@ -1,18 +1,17 @@
 import { PAGINATION_PAGE_SIZE } from "@/lib/constants/config";
-import clientPromise, { getCollection } from "@/lib/db/mongodb";
+import { getCollection } from "@/lib/db/mongodb";
 import {
     InvalidPaginationError,
     InvalidInputError,
 } from "@/lib/errors/inputExceptions";
 import { RequestStatus } from "@/lib/types/request";
-import { GeoLocation, ItemRequest } from "@/lib/types/requests/requests";
+import { ItemRequest } from "@/lib/types/requests/requests";
 import {
     isValidCreateItemRequest,
     isValidEditItemRequest,
     isValidStatus,
-    isValidString,
 } from "@/lib/validation/request/requests";
-import { Collection, ObjectId } from "mongodb";
+import { Collection } from "mongodb";
 
 export async function getItemRequests(
     status: string | null,
@@ -66,7 +65,9 @@ export async function getItemRequests(
             },
         });
 
-        let items = await col.aggregate<ItemRequest>(aggregatedQuery).toArray();
+        const items = await col
+            .aggregate<ItemRequest>(aggregatedQuery)
+            .toArray();
         return items;
     } catch (error) {
         console.error("Error fetching item request", error);
@@ -75,6 +76,8 @@ export async function getItemRequests(
 }
 
 export async function createItemRequest(
+    // any will be validated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<ItemRequest> {
@@ -105,6 +108,8 @@ export async function createItemRequest(
 }
 
 export async function editItemRequest(
+    // any will be validated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<ItemRequest | null> {

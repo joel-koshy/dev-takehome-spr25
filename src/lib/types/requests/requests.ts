@@ -8,7 +8,6 @@ export type GeoLocation = {
 }
 
 export interface ItemRequest {
-    _id?: any;
     id?: ObjectId; 
     requestorName: string;
     itemRequested: string;

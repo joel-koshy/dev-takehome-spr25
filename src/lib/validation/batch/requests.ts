@@ -1,15 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ^ disable rules because we are validating anys to make sure it conforms else erroring
+
 import { InvalidInputError } from "@/lib/errors/inputExceptions";
 import { RequestStatus } from "@/lib/types/request";
+import { ItemRequest } from "@/lib/types/requests/requests";
 import {
     AnyBulkWriteOperation,
-    BulkWriteOperationError,
     ObjectId,
-    UpdateOneModel,
 } from "mongodb";
 
 export function isValidBatchEditRequests(
     request: any
-): AnyBulkWriteOperation<any>[] {
+): AnyBulkWriteOperation<ItemRequest>[] {
     if (!Array.isArray(request) || request.length === 0) {
         throw new InvalidInputError("Edits must be a non-empty array");
     }
@@ -47,7 +49,7 @@ export function isValidBatchEditRequests(
 
 export function isValidDeleteRequests(
     request: any
-): AnyBulkWriteOperation<any>[] {
+): AnyBulkWriteOperation<ItemRequest>[] {
     if (!Array.isArray(request) || request.length === 0) {
         throw new InvalidInputError("Delete IDs must be a non-empty array");
     }

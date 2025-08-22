@@ -1,19 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ^ Valid and Invalid Objects are cast as any for validation
+
 import { describe, it, expect, beforeEach } from "vitest";
-import { MockItemRequest } from "@/lib/types/mock/request";
 import { RequestStatus } from "@/lib/types/request";
 import { PAGINATION_PAGE_SIZE } from "@/lib/constants/config";
-import { getItemRequests, createItemRequest, editItemRequest } from "./requests";
+import { getItemRequests, createItemRequest, editItemRequest } from "@/server/request/requests";
 import mockItemRequests from "@/app/api/mock/data";
 import {
     InvalidInputError,
     InvalidPaginationError,
 } from "@/lib/errors/inputExceptions";
-import clientPromise, { getCollection } from "@/lib/db/mongodb";
+import { getCollection } from "@/lib/db/mongodb";
 import { ItemRequest } from "@/lib/types/requests/requests";
 import { ObjectId } from "mongodb";
-import { BatchApproveRequests, BatchDeleteRequests } from "../batch/requests";
+import { BatchApproveRequests, BatchDeleteRequests } from "@/server/batch/requests";
 
-const mockData: ItemRequest[] = mockItemRequests.map((mock) => {
+export interface TestItemRequest extends ItemRequest {
+  _id: ObjectId;
+}
+const mockData: TestItemRequest[] = mockItemRequests.map((mock) => {
     const newId = new ObjectId();
     return {
         _id: newId, //To match DB and local
@@ -159,7 +164,6 @@ describe("getItemRequests", async () => {
                 requestCreatedDate: new Date("2023-01-01T10:00:00Z"),
                 lastEditedDate: null,
                 status: RequestStatus.PENDING,
-                _id: undefined
             },
         ];
 

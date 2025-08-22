@@ -6,7 +6,6 @@ import {
 } from "@/server/mock/requests";
 import { ServerResponseBuilder } from "@/lib/builders/serverResponseBuilder";
 import { InputException } from "@/lib/errors/inputExceptions";
-import { ObjectId } from "mongodb";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

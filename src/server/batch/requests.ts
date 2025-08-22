@@ -6,6 +6,8 @@ import {
 } from "@/lib/validation/batch/requests";
 
 export async function BatchApproveRequests(
+        // any will be validated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<BatchReturn> {
@@ -22,6 +24,8 @@ export async function BatchApproveRequests(
 }
 
 export async function BatchDeleteRequests(
+        // any will be validated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: any,
     dbName: string = "crisis_corner"
 ):Promise<BatchReturn> {
