@@ -93,7 +93,6 @@ export function isValidEditItemRequest(request: any): EditItemRequest {
     }
 
     if (!status || !isValidStatus(status)) {
-        console.log();
         throw new InvalidInputError("Invalid or missing status value");
     }
     return {

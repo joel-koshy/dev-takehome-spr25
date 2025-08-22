@@ -9,7 +9,6 @@ export async function GET(request: Request) {
     const page = parseInt(url.searchParams.get("page") || "1");
     try {
         const results =await getItemRequests(status, page);
-        console.log(results)
         return new Response(JSON.stringify(results), {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -43,7 +42,6 @@ export async function PUT(request: Request) {
 
 
 export async function PATCH(request: Request) {
-    console.log("hello")
   try {
     const req = await request.json();
     const editedRequest = await editItemRequest(req);
