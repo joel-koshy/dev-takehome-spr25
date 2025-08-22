@@ -106,3 +106,5 @@ npm run dev
 ```bash 
 npm run test
 ```
+
+> Note: Tests are AI generated but manually reviewed for accuracy.
