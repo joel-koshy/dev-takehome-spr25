@@ -1,0 +1,26 @@
+### GET all requests with pagination and status
+GET http://localhost:3000/api/request?page=1
+Content-Type: application/json
+
+
+### PUT - Create a new request
+PUT http://localhost:3000/api/request
+Content-Type: application/json
+
+{
+  "requestorName": "John Doe",
+  "itemRequested": "First Aid Kit",
+  "status": "pending"
+}
+
+
+### PATCH - Update status of multiple requests
+PATCH http://localhost:3000/api/request
+Content-Type: application/json
+
+{
+"id": "68a7b4c0f7af9b87a3cc1ee9",
+"status": "approved"
+}
+  
+

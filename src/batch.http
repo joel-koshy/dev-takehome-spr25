@@ -1,0 +1,28 @@
+### PATCH - Batch approve/update requests
+PATCH http://localhost:3000/api/batch
+Content-Type: application/json
+
+[
+  {
+    "id": "68a7b4c0f7af9b87a3cc1ee9",
+    "status": "approved"
+  },
+  {
+    "id": "689e4f9c65467b86ffa0c637",
+    "status": "completed"
+  }, 
+{
+    "id": "64f1d8e2b8c2f8c123456789",
+    "status": "completed"
+  }
+]
+
+
+### DELETE - Batch delete requests
+DELETE http://localhost:3000/api/batch
+Content-Type: application/json
+
+[
+  { "id": "689e4f9c65467b86ffa0c637" },
+  { "id": "68a7b4c0f7af9b87a3cc1ee9" }
+]

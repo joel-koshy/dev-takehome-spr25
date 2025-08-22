@@ -312,7 +312,7 @@ describe('editItemRequest', () => {
       }
       const request = {
         id: originalItem.id.toHexString(),
-        newStatus: RequestStatus.APPROVED,
+        status: RequestStatus.APPROVED,
       };
       
       // Act: Call the function under test
@@ -343,7 +343,7 @@ describe('editItemRequest', () => {
     });
 
     it('should throw InvalidInputError for a missing id', async () => {
-        const request = { newStatus: RequestStatus.COMPLETED };
+        const request = { status: RequestStatus.COMPLETED };
         await expect(editItemRequest(request, "test")).rejects.toThrow(InvalidInputError);
     });
     
@@ -351,7 +351,7 @@ describe('editItemRequest', () => {
       // Arrange: Create a request with a clearly invalid ID
       const request = {
         id: 'not-a-valid-object-id',
-        newStatus: RequestStatus.COMPLETED,
+        status: RequestStatus.COMPLETED,
       };
 
       // Act & Assert: Expect the function to reject with the specific error
@@ -376,7 +376,7 @@ describe('editItemRequest', () => {
  
       const request = {
         id: originalItem.id.toHexString(),
-        newStatus: 'under_review' as RequestStatus, // Cast to bypass TypeScript type checking for the test
+        status: 'under_review' as RequestStatus, // Cast to bypass TypeScript type checking for the test
       };
 
       // Act & Assert: Expect the function to reject
@@ -391,7 +391,7 @@ describe('editItemRequest', () => {
       const nonExistentId = new ObjectId().toHexString();
       const request = {
         id: nonExistentId,
-        newStatus: RequestStatus.REJECTED,
+        status: RequestStatus.REJECTED,
       };
 
       // Act: Call the function with the non-existent ID

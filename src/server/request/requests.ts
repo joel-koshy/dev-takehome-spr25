@@ -96,11 +96,11 @@ export async function createItemRequest(request: any, dbName:string = "crisis_co
 
     const date = new Date
     const newRequest: ItemRequest = {
-        requestorName: requestorName,  
-        itemRequested: itemRequested, 
+        requestorName: requestorName,
+        itemRequested: itemRequested,
         requestCreatedDate: date,
-        lastEditedDate: date, 
-        status : newItemStatus
+        lastEditedDate: date,
+        status: newItemStatus,
     }
     try {
         const col: Collection<ItemRequest> = await getCollection(dbName)
@@ -117,28 +117,30 @@ export async function editItemRequest(
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<ItemRequest | null> {
+
+        console.log("reached")
     if (!request || typeof request !== "object") {
         throw new InvalidInputError("Request body must be an object");
     }
 
-    const { id, newStatus } = request;
+    const { id, status } = request;
 
     if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
         throw new InvalidInputError("Invalid or missing ObjectId");
     }
 
-    if (!newStatus || !isValidStatus(newStatus)) {
+    if (!status || !isValidStatus(status)) {
+        console.log()
         throw new InvalidInputError("Invalid or missing status value");
     }
 
     try {
         const col: Collection<ItemRequest> = await getCollection(dbName);
-
         const result = await col.findOneAndUpdate(
             { _id: new ObjectId(id) }, 
             {
                 $set: {
-                    status: newStatus,
+                    status: status,
                     lastEditedDate: new Date(),
                 },
             },
@@ -150,7 +152,7 @@ export async function editItemRequest(
         return null; 
 
     } catch (error) {
-        console.error("Error updating item request:", error);
+        console.log("Error updating item request:", error);
         throw new Error("Failed to update item request");
     }
 }
