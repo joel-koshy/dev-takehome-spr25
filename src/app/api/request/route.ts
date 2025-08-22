@@ -26,7 +26,6 @@ export async function GET(request: Request) {
 
 
 export async function PUT(request: Request) {
-    console.log("hello")
   try {
     const req = await request.json();
     const newRequest = await createItemRequest(req);

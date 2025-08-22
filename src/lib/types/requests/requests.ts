@@ -9,7 +9,7 @@ export type GeoLocation = {
 
 export interface ItemRequest {
     _id?: any;
-    id?: ObjectId;
+    id?: ObjectId; 
     requestorName: string;
     itemRequested: string;
     requestCreatedDate: Date;
@@ -23,4 +23,10 @@ export interface CreateItemRequest {
     requestorName: string;
     itemRequested: string;
     status?: RequestStatus;
+    location?: GeoLocation
+}
+
+export interface EditItemRequest{
+    id: ObjectId;
+    status: RequestStatus;
 }

@@ -4,10 +4,11 @@ import {
     InvalidPaginationError,
     InvalidInputError,
 } from "@/lib/errors/inputExceptions";
-import { MockItemRequest } from "@/lib/types/mock/request";
 import { RequestStatus } from "@/lib/types/request";
 import { GeoLocation, ItemRequest } from "@/lib/types/requests/requests";
 import {
+    isValidCreateItemRequest,
+    isValidEditItemRequest,
     isValidStatus,
     isValidString,
 } from "@/lib/validation/request/requests";
@@ -45,7 +46,6 @@ export async function getItemRequests(
         });
 
         // Paginate
-
         aggregatedQuery.push({
             $skip: (Math.max(1, page) - 1) * PAGINATION_PAGE_SIZE,
         });
@@ -53,7 +53,7 @@ export async function getItemRequests(
             $limit: PAGINATION_PAGE_SIZE,
         });
 
-        // Follow MockItemRequest Type (changes _id to id )
+        // Follow ItemRequest Type (changes _id to id )
         aggregatedQuery.push({
             $project: {
                 _id: 0,
@@ -78,48 +78,12 @@ export async function createItemRequest(
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<ItemRequest> {
-    //validation
     if (!request) {
         throw new InvalidInputError("Missing Request Body");
     }
 
-    const { requestorName, itemRequested, status, location } = request;
-
-    if (!isValidString(requestorName, 3, 30)) {
-        throw new InvalidInputError("Missing or invalid 'requestorName' field");
-    }
-    if (!isValidString(itemRequested, 2, 100)) {
-        throw new InvalidInputError("Missing or invalid 'itemRequested' field");
-    }
-
-    let newItemStatus: RequestStatus;
-    if (!status) {
-        newItemStatus = RequestStatus.PENDING;
-    } else if (isValidStatus(status)) {
-        newItemStatus = status;
-    } else {
-        throw new InvalidInputError("Supplied Status is Invalid");
-    }
-
-    let newLocation: GeoLocation | undefined = undefined;
-    if (location) {
-        if (
-            location.type !== "Point" ||
-            !Array.isArray(location.coordinates) ||
-            location.coordinates.length !== 2 ||
-            typeof location.coordinates[0] !== "number" ||
-            typeof location.coordinates[1] !== "number"
-        ) {
-            throw new InvalidInputError(
-                "Invalid 'location' field. Must be GeoJSON Point [lng, lat]"
-            );
-        }
-        newLocation = {
-            type: "Point",
-            coordinates: [location.coordinates[0], location.coordinates[1]],
-        };
-    }
-
+    const { requestorName, itemRequested, status, location } =
+        isValidCreateItemRequest(request);
 
     const date = new Date();
     const newRequest: ItemRequest = {
@@ -127,8 +91,8 @@ export async function createItemRequest(
         itemRequested: itemRequested,
         requestCreatedDate: date,
         lastEditedDate: date,
-        status: newItemStatus,
-        ...(newLocation && { location: newLocation }),
+        status: status ?? RequestStatus.PENDING,
+        ...(location && { location: location }),
     };
     try {
         const col: Collection<ItemRequest> = await getCollection(dbName);
@@ -144,26 +108,11 @@ export async function editItemRequest(
     request: any,
     dbName: string = "crisis_corner"
 ): Promise<ItemRequest | null> {
-    console.log("reached");
-    if (!request || typeof request !== "object") {
-        throw new InvalidInputError("Request body must be an object");
-    }
-
-    const { id, status } = request;
-
-    if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
-        throw new InvalidInputError("Invalid or missing ObjectId");
-    }
-
-    if (!status || !isValidStatus(status)) {
-        console.log();
-        throw new InvalidInputError("Invalid or missing status value");
-    }
-
+    const { id, status } = isValidEditItemRequest(request);
     try {
         const col: Collection<ItemRequest> = await getCollection(dbName);
         const result = await col.findOneAndUpdate(
-            { _id: new ObjectId(id) },
+            { _id: id },
             {
                 $set: {
                     status: status,
