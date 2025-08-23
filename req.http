@@ -14,6 +14,25 @@ Content-Type: application/json
 }
 
 
+### PUT - Create a new request
+PUT http://localhost:3000/api/request
+Content-Type: application/json
+
+{
+  "requestorName": "John Doe",
+  "itemRequested": "First Aid Kit",
+  "status": "pending", 
+  "location": {
+    "type": "Point",
+    "coordinates": [-84.3835, 33.7493]
+  }
+}
+
+### GET all requests with pagination and status
+GET http://localhost:3000/api/heatmap
+Content-Type: application/json
+
+
 ### PATCH - Update status of multiple requests
 PATCH http://localhost:3000/api/request
 Content-Type: application/json

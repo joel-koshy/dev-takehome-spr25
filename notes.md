@@ -32,22 +32,29 @@
 
 # Notes
 
+/cool shows a heatmap of requests that was created with location data (latitude and longitude) on Google maps 
+
 <!-- Notes go here -->
 ## 1. API routes 
 
 Some API routes have custom behaviors:
+
 **PUT `/api/request`**
 - Allows updating the status of an existing request.
-- The request body should contain (status is optional):
+- The request body should contain (status and location are optional):
 ```json 
 {
   "requestorName": "John Doe",
   "itemRequested": "First Aid Kit",
-  "status": "pending"
+  "status": "pending", 
+  "location": {
+      "type": "Point",
+      "coordinates": [-73.935242, 40.73061] // longitude, latitude
+    }
 }
 ```
 
-**Batch Edit**
+**PATCH** `/api/batch` : Batch Edit
 - Accepts an array of edits:
 -  Updates multiple requests in one call.
 ```json 
@@ -56,7 +63,7 @@ Some API routes have custom behaviors:
   { "id": "<mongodb-id>", "status": "PENDING" }
 ]
 ```
-**Delete**
+**DELETE** `/api/batch` : Batch Delete
 - Accepts an array of IDs to delete 
 ```json
 [
@@ -64,6 +71,8 @@ Some API routes have custom behaviors:
   { "id": "<mongodb-id>", "status": "PENDING" }
 ]
 ```
+**GET** `/api/heatmap`: Return all location data of item requests
+
 
 >All IDs are based on MongoDB’s auto-generated ObjectIds.
 
@@ -94,7 +103,7 @@ DB_URI=<non-srv-mongodb-uri>
 ```
 
 - **`.env.local`** – used for 'something cool' page 
-- ```env.local 
+ ```env.local 
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
   ```
 ### 3. Running 
